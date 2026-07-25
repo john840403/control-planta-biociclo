@@ -2485,6 +2485,12 @@ document.getElementById("fechaParo").value;
 let proceso =
 document.getElementById("procesoParo").value;
 
+let horaInicio =
+document.getElementById("horaInicioParo").value;
+
+let horaFinal =
+document.getElementById("horaFinParo").value;
+
 let tipo =
 document.getElementById("tipoParo").value;
 
@@ -2508,6 +2514,27 @@ return;
 
 }
 
+let datos = new FormData();
+
+datos.append("fecha", fecha);
+datos.append("proceso", proceso);
+datos.append("horaInicio", horaInicio);
+datos.append("horaFinal", horaFinal);
+datos.append("tiempoPerdido", tiempo);
+datos.append("tipoNovedad", tipo);
+datos.append("responsable", responsable);
+datos.append("descripcion", descripcion);
+datos.append("accionCorrectiva", accion);
+
+fetch(
+"https://script.google.com/macros/s/AKfycby8Io3mThX6Zd6-t-WdKWRxKQ5PoCH4rxXr6_rIQ0i97YG9GbmmI_BwXGhXkNiAahe7ng/exec",
+{
+method:"POST",
+mode:"no-cors",
+body:datos
+}
+);
+
 let fila = `
 
 <tr>
@@ -2530,6 +2557,8 @@ document.getElementById("horaFinParo").value="";
 document.getElementById("tiempoParo").value="";
 document.getElementById("descripcionParo").value="";
 document.getElementById("accionParo").value="";
+
+alert("Registro enviado a Google Sheets");
 
 }
 
