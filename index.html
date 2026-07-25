@@ -2414,8 +2414,8 @@ return;
 }
 
 let datos = new FormData();
- 
-datos.append("hoja","PRUEBA");
+
+datos.append("hoja","DESCARGUE");
 
 datos.append("fecha",fecha);
 datos.append("cliente",cliente);
@@ -2428,9 +2428,8 @@ datos.append("tipoResiduo",tipoResiduo);
 datos.append("peso",peso);
 datos.append("observaciones",observaciones);
 
- alert("Voy a enviar el registro");
 fetch(
-"https://script.google.com/macros/library/d/1NaCxQaX2srmFzoUKdIhYG_K_UpguX3Jwxk4lGZHwVaIqNgQyROA7wbpD/2",
+"https://script.google.com/macros/s/AKfycby8Io3mThX6Zd6-t-WdKWRxKQ5PoCH4rxXr6_rIQ0i97YG9GbmmI_BwXGhXkNiAahe7ng/exec",
 {
 method:"POST",
 mode:"no-cors",
@@ -2439,7 +2438,6 @@ body:datos
 );
 
 let fila = `
-
 <tr>
 <td>${fecha}</td>
 <td>${cliente}</td>
@@ -2452,7 +2450,6 @@ let fila = `
 <td>${peso}</td>
 <td>${observaciones}</td>
 </tr>
-
 `;
 
 document.querySelector("#tablaDescargue tbody").innerHTML += fila;
@@ -2470,8 +2467,7 @@ document.getElementById("operario2Descargue").selectedIndex = 0;
 
 alert("Registro enviado a Google Sheets");
 
-}
-function calcularTiempoParo(){
+}function calcularTiempoParo(){
 
 let inicio =
 document.getElementById("horaInicioParo").value;
