@@ -2467,7 +2467,9 @@ document.getElementById("operario2Descargue").selectedIndex = 0;
 
 alert("Registro enviado a Google Sheets");
 
-}function calcularTiempoParo(){
+}
+}     
+function calcularTiempoParo(){
 
 let inicio =
 document.getElementById("horaInicioParo").value;
@@ -2497,7 +2499,12 @@ horas + " h " + minutos + " min";
 
 }
 
+}
+
+
 function guardarParo(){
+
+alert("ENTRÉ A GUARDAR PARO");
 
 let fecha =
 document.getElementById("fechaParo").value;
@@ -2526,6 +2533,7 @@ document.getElementById("accionParo").value;
 if(fecha === ""){
 
 alert("Debe diligenciar la fecha");
+
 return;
 
 }
@@ -2553,7 +2561,6 @@ body:datos
 alert("Solicitud enviada");
 
 }
-
 mostrarModulo("descargue");
 
 </script>
