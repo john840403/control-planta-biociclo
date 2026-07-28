@@ -2497,15 +2497,11 @@ horas + " h " + minutos + " min";
 
 }
 
-}
 
 function guardarParo(){
 
 let fecha =
 document.getElementById("fechaParo").value;
-
-let proceso =
-document.getElementById("procesoParo").value;
 
 let horaInicio =
 document.getElementById("horaInicioParo").value;
@@ -2531,17 +2527,13 @@ document.getElementById("accionParo").value;
 if(fecha === ""){
 
 alert("Debe diligenciar la fecha");
-
 return;
 
 }
 
 let datos = new FormData();
 
-datos.append("hoja","PAROS Y NOVEDADES");
-
 datos.append("fecha", fecha);
-datos.append("proceso", proceso);
 datos.append("horaInicio", horaInicio);
 datos.append("horaFinal", horaFinal);
 datos.append("tiempoPerdido", tiempo);
@@ -2559,30 +2551,7 @@ body:datos
 }
 );
 
-let fila = `
-
-<tr>
-<td>${fecha}</td>
-<td>${proceso}</td>
-<td>${tipo}</td>
-<td>${responsable}</td>
-<td>${tiempo}</td>
-<td>${descripcion}</td>
-<td>${accion}</td>
-</tr>
-
-`;
-
-document.querySelector("#tablaParos tbody").innerHTML += fila;
-
-document.getElementById("fechaParo").value="";
-document.getElementById("horaInicioParo").value="";
-document.getElementById("horaFinParo").value="";
-document.getElementById("tiempoParo").value="";
-document.getElementById("descripcionParo").value="";
-document.getElementById("accionParo").value="";
-
-alert("Registro enviado a Google Sheets");
+alert("Solicitud enviada");
 
 }
 
