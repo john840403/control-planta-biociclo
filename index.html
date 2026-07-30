@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECOCICLO - Control de Procesos</title>
+  <!-- Librería SheetJS para lectura de bases de datos Excel si se requiere -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      /* Paleta EcoCiclo: Verde Campo y Café Tierra */
+      --primary: #2e7d32;          /* Verde campo principal */
+      --primary-dark: #1b5e20;     /* Verde bosque oscuro */
+      --accent-earth: #6d4c41;     /* Café tierra para detalles */
+      --accent-earth-dark: #4e342e;/* Café tierra profundo */
+      --bg: #f2efe9;               /* Fondo tierra suave / lino */
+      --card-bg: #ffffff;          /* Blanco limpio para los formularios */
+      --text: #2d2d2d;
+      --border: #d7ccc8;           /* Borde con leve tono arcilla */
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 15px;
+    }
+
+    header {
+      background-color: #ffffff;
+      color: var(--primary-dark);
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--primary); /* Acento verde arriba */
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 3px 8px rgba(109, 76, 65, 0.08);
+      text-align: center;
+    }
+
+    .header-logo {
+      max-height: 55px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--primary-dark);
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    nav button {
+      background-color: #e8e3d9; /* Botones inactivos en tono tierra claro */
+      color: var(--accent-earth-dark);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+
+    nav button:hover, nav button.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary-dark);
+      box-shadow: 0 2px 5px rgba(46, 125, 50, 0.3);
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--accent-earth); /* Detalle lateral café tierra */
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-earth-dark);
+      margin-bottom: 4px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      background-color: #fafafa;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: #ffffff;
+    }
+
+    textarea {
+      height: 60px;
+      resize: vertical;
+    }
+
+    .btnGuardar {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+      width: auto;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .btnGuardar:hover {
+      background-color: var(--primary-dark);
+    }
+
+    /* CONTENEDOR PARA TABLAS RESPONSIVE */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    table, th, td {
+      border: 1px solid var(--border);
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e8f5e9; /* Verde campo muy claro para el encabezado */
+      color: var(--primary-dark);
+      font-weight: bold;
+    }
+
+    /* REGLAS ESPECÍFICAS PARA PANTALLAS PEQUEÑAS (MÓVILES) */
+    @media (max-width: 768px) {
+      body {
+        padding: 8px;
+      }
+
+      header h1 {
+        font-size: 1.2rem;
+      }
+
+      nav {
+        gap: 6px;
+      }
+
+      nav button {
+        flex: 1 1 calc(50% - 6px);
+        padding: 10px 8px;
+        font-size: 0.85rem;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .btnGuardar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logoecociclociclofertil.png" alt="Logo Ecociclo" class="header-logo">
+    <h1>ECOCICLO - REGISTRO OPERATIVO DE PLANTA</h1>
+  </header>
+
+  <nav id="menuNav">
+    <button class="active" onclick="cargarModulo('descargue', this)">DESCARGUE</button>
+    <button onclick="cargarModulo('organico', this)">SELECCIÓN ORGÁNICO</button>
+    <button onclick="cargarModulo('tamizaje', this)">TAMIZAJE</button>
+    <button onclick="cargarModulo('canecas', this)">ORGÁNICO CANECAS</button>
+    <button onclick="cargarModulo('verdes', this)">SELECCIÓN VERDES</button>
+    <button onclick="cargarModulo('chipeado', this)">CHIPEADO</button>
+    <button onclick="cargarModulo('lavado', this)">LAVADO DE CANECAS</button>
+    <button onclick="cargarModulo('destruccion', this)">DESTRUCCIÓN DE MARCAS</button>
+    <button onclick="cargarModulo('paros', this)">PAROS / NOVEDADES</button>
+    <button onclick="accesoAdmin()">ADMINISTRACIÓN</button>
+  </nav>
+
+  <!-- CONTENEDOR PRINCIPAL DONDE SE RENDERIZAN LOS FORMULARIOS -->
+  <div id="contenido"></div>
+
+<script>
+// =============================================================
+// CONEXIÓN CON GOOGLE SHEETS (GOOGLE APPS SCRIPT)
+// =============================================================
+const URL_GOOGLE_SCRIPT = 'https://script.google.com/macros/s/AKfycbwqS2TUpL3M9q8TAnA80MOnxUjB3sO2r215GlsB_xX26TksKzY3C9eG2A9L5YJ6x3Y/exec';
+
+// Agrega estas funciones auxiliares arriba de enviarAExcel o dentro del mismo bloque de script
+function formatearFecha(fechaStr) {
+  if (!fechaStr) return "";
+  const partes = fechaStr.split("-");
+  if (partes.length === 3) {
+    return `${partes[2]}/${partes[1]}/${partes[0]}`; // Formato DD/MM/YYYY
+  }
+  return fechaStr;
+}
+
+function formatearHora(horaStr) {
+  if (!horaStr) return "";
+  const partes = horaStr.split(":");
+  if (partes.length >= 2) {
+    return `${partes[0].padStart(2, '0')}:${partes[1].padStart(2, '0')}`;
+  }
+  return horaStr;
+}
+
+// Variable con la dirección de tu Google Form
+const URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSfVqr5RfH4_wFVgsrPMbDK7Gu6CFCOutaZhb7E-4Mzen_WGkQ/formResponse";
+
+function enviarAExcel(datos) {
+  console.log("Datos que se intentan enviar:", datos);
+
+  const formData = new URLSearchParams();
+
+  if (datos.Fecha) formData.append("entry.809339299", datos.Fecha);
+  if (datos.Cliente) formData.append("entry.788926280", datos.Cliente);
+  if (datos.Operacion) formData.append("entry.1680060465", datos.Operacion);
+  
+  // Operarios
+  if (datos.Operario1 || datos.OperarioAM) formData.append("entry.1201137184", datos.Operario1 || datos.OperarioAM);
+  if (datos.Operario2) formData.append("entry.356804399", datos.Operario2);
+  if (datos.Operario3) formData.append("entry.221184819", datos.Operario3);
+  if (datos.Operario4) formData.append("entry.243661424", datos.Operario4);
+  if (datos.Operario5) formData.append("entry.61434039", datos.Operario5);
+
+  // Materiales y pesos
+  if (datos.TipoResiduo) formData.append("entry.1629053981", datos.TipoResiduo);
+  if (datos.TipoProducto) formData.append("entry.922923616", datos.TipoProducto);
+  if (datos.NumeroLote) formData.append("entry.1873579592", datos.NumeroLote);
+  if (datos.Peso) formData.append("entry.845832650", datos.Peso);
+
+  // Tiempos
+  if (datos.HoraInicio) formData.append("entry.1041645417", datos.HoraInicio);
+  if (datos.HoraFin) formData.append("entry.872839673", datos.HoraFin);
+  if (datos.TiempoTotal) formData.append("entry.12884645", datos.TiempoTotal);
+
+  // Métricas y Producción
+  if (datos.Paladas) formData.append("entry.1681375050", datos.Paladas);
+  if (datos.KgTotales) formData.append("entry.100486057", datos.KgTotales);
+  if (datos.TonTotales) formData.append("entry.1258056891", datos.TonTotales);
+  if (datos.ProductividadCanecas) formData.append("entry.1268338276", datos.ProductividadCanecas);
+  if (datos.BasuraKg) formData.append("entry.928736469", datos.BasuraKg);
+  if (datos.CanecasOp1) formData.append("entry.544459693", datos.CanecasOp1);
+  if (datos.CanecasOp2 || datos.CanecasPM) formData.append("entry.1720445396", datos.CanecasOp2 || datos.CanecasPM);
+  if (datos.CanecasHora) formData.append("entry.925695289", datos.CanecasHora);
+
+  // Novedades y Paros
+  if (datos.TiempoPerdido) formData.append("entry.1510017946", datos.TiempoPerdido);
+  if (datos.TipoNovedad) formData.append("entry.708087013", datos.TipoNovedad);
+  if (datos.Responsable) formData.append("entry.497061147", datos.Responsable);
+  if (datos.PLACA) formData.append("entry.631417109", datos.PLACA);
+  if (datos.Descripcion) formData.append("entry.1150142212", datos.Descripcion);
+  if (datos.AccionCorrectiva) formData.append("entry.1097365395", datos.AccionCorrectiva);
+
+  // Envío a Google Forms
+  fetch(URL_FORM, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: formData.toString()
+  })
+  .then(() => console.log("Enviado con éxito a Google Sheets"))
+  .catch(error => console.error("Error al enviar:", error));
+}
+// -------------------------------------------------------------
+// CONTROL DE NAVEGACIÓN Y VISTAS DE FORMULARIOS
+// -------------------------------------------------------------
+function cargarModulo(modulo, btn) {
+  if (btn) {
+    document.querySelectorAll("#menuNav button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
+  const contenedor = document.getElementById("contenido");
+
+  if (modulo === "descargue") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>DESCARGUE DE MATERIAL</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaDescargue"></div>
+        <div>
+          <label>Cliente / Gestor</label>
+          <select id="clienteDescargue">
+            <option value="">Cargando clientes...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Descargue">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Descargue">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Placa Vehículo</label><input type="text" id="placaDescargue"></div>
+        <div><label>Hora Ingreso</label><input type="time" id="horaIngresoDescargue" onchange="calcularDescargue()"></div>
+        <div><label>Hora Salida</label><input type="time" id="horaSalidaDescargue" onchange="calcularDescargue()"></div>
+        <div><label>Tiempo Transcurrido</label><input type="text" id="tiempoDescargue" readonly></div>
+        <div><label>Tipo de Residuo</label><input type="text" id="tipoResiduoDescargue"></div>
+        <div><label>Peso (Kg)</label><input type="number" id="pesoDescargue"></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesDescargue"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarDescargue()">Guardar Registro</button>
+
+      <table id="tablaDescargue">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Cliente</th><th>Op. 1</th><th>Op. 2</th><th>Placa</th><th>H. Ingreso</th><th>H. Salida</th><th>Residuo</th><th>Peso</th><th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar listas desplegables automáticamente
+    cargarClientesSelect("clienteDescargue");
+    cargarOperariosSelect("operario1Descargue");
+    cargarOperariosSelect("operario2Descargue");
+  }
+else if (modulo === "tamizaje") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>PROCESO DE TAMIZAJE</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaTamizaje"></div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Tamizaje">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Tamizaje">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 3</label>
+          <select id="operario3Tamizaje">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Hora Inicio</label><input type="time" id="horaInicioTamizaje" onchange="calcularTamizaje()"></div>
+        <div><label>Hora Fin</label><input type="time" id="horaFinTamizaje" onchange="calcularTamizaje()"></div>
+        <div><label>Tiempo Transcurrido</label><input type="text" id="tiempoTamizaje" readonly></div>
+        <div><label>Número de Lote</label><input type="text" id="loteTamizaje" placeholder="Ej: Lote 123"></div>
+        <div>
+          <label>Tipo de Producto</label>
+          <select id="tipoProductoTamizaje">
+            <option value="">Seleccione tipo...</option>
+            <option value="GENÉRICO">GENÉRICO</option>
+            <option value="DISTRIBUCIÓN">DISTRIBUCIÓN</option>
+            <option value="AGUACATE">AGUACATE</option>
+          </select>
+        </div>
+        <div><label>Paladas</label><input type="number" id="paladasTamizaje" placeholder="Ej: 5"></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesTamizaje"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarTamizaje()">Guardar Registro</button>
+
+      <div class="table-container">
+        <table id="tablaTamizaje">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Op. 1</th>
+              <th>Op. 2</th>
+              <th>Op. 3</th>
+              <th>H. Inicio</th>
+              <th>H. Fin</th>
+              <th>Tiempo</th>
+              <th>N° Lote</th>
+              <th>Producto</th>
+              <th>Paladas</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+    // Cargar operarios en los 3 desplegables
+    cargarOperariosSelect("operario1Tamizaje");
+    cargarOperariosSelect("operario2Tamizaje");
+    cargarOperariosSelect("operario3Tamizaje");
+  }
+
+else if (modulo === "organico") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>PROCESAMIENTO DE ORGÁNICO</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaOrganico"></div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Organico">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Organico">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 3</label>
+          <select id="operario3Organico">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 4</label>
+          <select id="operario4Organico">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Hora Inicio</label><input type="time" id="horaInicioOrganico" onchange="calcularOrganico()"></div>
+        <div><label>Hora Fin</label><input type="time" id="horaFinOrganico" onchange="calcularOrganico()"></div>
+        <div><label>Tiempo Transcurrido (Horas)</label><input type="text" id="tiempoOrganico" readonly></div>
+        <div><label>Paladas Orgánico</label><input type="number" id="paladasOrganico" oninput="calcularOrganico()"></div>
+        <div><label>Kg Orgánico</label><input type="number" id="kgOrganico" readonly></div>
+        <div><label>Ton Orgánico</label><input type="number" id="tonOrganico" readonly></div>
+        <div><label>Productividad (Ton/h)</label><input type="text" id="productividadOrganico" readonly></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesOrganico"></textarea>
+      <br><br>
+      
+      <!-- Botones de Acción -->
+      <button type="button" class="btnCalcular" onclick="calcularOrganico()" style="margin-right: 10px; padding: 10px 15px; cursor: pointer;">Calcular</button>
+      <button type="button" class="btnGuardar" onclick="guardarOrganico()" style="padding: 10px 15px; cursor: pointer;">Guardar Registro</button>
+
+      <br><br>
+      <table id="tablaOrganico">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Op. 1</th><th>Op. 2</th><th>Op. 3</th><th>Op. 4</th><th>H. Inicio</th><th>H. Fin</th><th>Tiempo</th><th>Paladas</th><th>Kg</th><th>Ton</th><th>Prod. (T/h)</th><th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar los 4 operarios en las listas desplegables
+    cargarOperariosSelect("operario1Organico");
+    cargarOperariosSelect("operario2Organico");
+    cargarOperariosSelect("operario3Organico");
+    cargarOperariosSelect("operario4Organico");
+
+    // Renderizar la tabla si existe la función
+    if (typeof renderizarTablaOrganico === "function") {
+      renderizarTablaOrganico();
+    }
+}
+ else if (modulo === "canecas") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>ORGÁNICO CANECAS</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaCanecas"></div>
+        <div>
+          <label>Operario AM</label>
+          <select id="operarioAMCanecas">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Canecas AM</label><input type="number" id="canecasAM" oninput="calcularCanecas()"></div>
+        <div><label>Kg AM</label><input type="text" id="kgAM" readonly></div>
+        <div>
+          <label>Operario PM</label>
+          <select id="operarioPMCanecas">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Canecas PM</label><input type="number" id="canecasPM" oninput="calcularCanecas()"></div>
+        <div><label>Kg PM</label><input type="text" id="kgPM" readonly></div>
+        <div><label>Kg Totales</label><input type="text" id="kgTotalCanecas" readonly></div>
+        <div><label>Ton Totales</label><input type="text" id="tonTotalCanecas" readonly></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesCanecas"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarCanecas()">Guardar Registro</button>
+
+      <table id="tablaCanecas">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Op. AM</th><th>Canecas AM</th><th>Kg AM</th><th>Op. PM</th><th>Canecas PM</th><th>Kg PM</th><th>Kg Total</th><th>Ton Total</th><th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar listas desplegables de operarios para AM y PM
+    cargarOperariosSelect("operarioAMCanecas");
+    cargarOperariosSelect("operarioPMCanecas");
+  }
+  else if (modulo === "verdes") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>SELECCIÓN DE VERDES</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaVerdes"></div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Verdes" onchange="calcularVerdes()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Verdes" onchange="calcularVerdes()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 3</label>
+          <select id="operario3Verdes" onchange="calcularVerdes()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 4</label>
+          <select id="operario4Verdes" onchange="calcularVerdes()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 5</label>
+          <select id="operario5Verdes" onchange="calcularVerdes()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Paladas</label><input type="number" id="paladasVerdes" oninput="calcularVerdes()"></div>
+        <div><label>Kg Totales</label><input type="text" id="kgVerdes" readonly></div>
+        <div><label>Ton Totales</label><input type="text" id="tonVerdes" readonly></div>
+        <div><label>Kg / Operario</label><input type="text" id="kgOperarioVerdes" readonly></div>
+        <div><label>Ton / Operario</label><input type="text" id="tonOperarioVerdes" readonly></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesVerdes"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarVerdes()">Guardar Registro</button>
+
+      <table id="tablaVerdes">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Op1</th><th>Op2</th><th>Op3</th><th>Op4</th><th>Op5</th><th>Paladas</th><th>Kg Total</th><th>Ton Total</th><th>Kg/Op</th><th>Ton/Op</th><th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar las listas desplegables de los 5 operarios
+    cargarOperariosSelect("operario1Verdes");
+    cargarOperariosSelect("operario2Verdes");
+    cargarOperariosSelect("operario3Verdes");
+    cargarOperariosSelect("operario4Verdes");
+    cargarOperariosSelect("operario5Verdes");
+  }
+  else if (modulo === "chipeado") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>CHIPEADO - TRITURACIÓN DE VERDES</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaChipeado"></div>
+        <div>
+          <label>Máquina / Equipo</label>
+          <select id="maquinaChipeado">
+            <option>CHIPEADORA 1590XP 1</option>
+            <option>CHIPEADORA 18XP</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Chipeado" onchange="calcularChipeado()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Chipeado" onchange="calcularChipeado()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 3</label>
+          <select id="operario3Chipeado" onchange="calcularChipeado()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Paladas</label><input type="number" id="paladasChipeado" oninput="calcularChipeado()"></div>
+        <div><label>Kg Totales</label><input type="text" id="kgChipeado" readonly></div>
+        <div><label>Ton Totales</label><input type="text" id="tonChipeado" readonly></div>
+        <div><label>Ton / Operario</label><input type="text" id="tonOperarioChipeado" readonly></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesChipeado"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarChipeado()">Guardar Registro</button>
+
+      <table id="tablaChipeado">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Máquina</th><th>Op1</th><th>Op2</th><th>Op3</th><th>Paladas</th><th>Kg Total</th><th>Ton Total</th><th>Ton/Op</th><th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar desplegables de operarios en Chipeado
+    cargarOperariosSelect("operario1Chipeado");
+    cargarOperariosSelect("operario2Chipeado");
+    cargarOperariosSelect("operario3Chipeado");
+  }
+  else if (modulo === "lavado") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>LAVADO DE CANECAS</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaLavado"></div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Lavado" onchange="calcularLavado()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Lavado" onchange="calcularLavado()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Canecas Lavadas</label><input type="number" id="canecasLavadas" oninput="calcularLavado()"></div>
+        <div><label>Hora Inicio</label><input type="time" id="horaInicioLavado" onchange="calcularLavado()"></div>
+        <div><label>Hora Fin</label><input type="time" id="horaFinLavado" onchange="calcularLavado()"></div>
+        <div><label>Tiempo Total</label><input type="text" id="tiempoLavado" readonly></div>
+        <div><label>Canecas / Hora</label><input type="text" id="canecasHoraLavado" readonly></div>
+        <div><label>Canecas / Hora / Op</label><input type="text" id="canecasHoraOperario" readonly></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesLavado"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarLavado()">Guardar Registro</button>
+
+      <table id="tablaLavado">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Op1</th><th>Op2</th><th>Canecas</th><th>Tiempo</th><th>Canecas/H</th><th>Canecas/H/Op</th><th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar desplegables de operarios en Lavado
+    cargarOperariosSelect("operario1Lavado");
+    cargarOperariosSelect("operario2Lavado");
+  }
+  else if (modulo === "destruccion") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>DESTRUCCIÓN DE MARCAS</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaDestruccion"></div>
+        <div>
+          <label>Operario 1</label>
+          <select id="operario1Destruccion" onchange="calcularDestruccion()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div>
+          <label>Operario 2</label>
+          <select id="operario2Destruccion" onchange="calcularDestruccion()">
+            <option value="">Cargando operarios...</option>
+          </select>
+        </div>
+        <div><label>Hora Inicio</label><input type="time" id="horaInicioDestruccion" onchange="calcularDestruccion()"></div>
+        <div><label>Hora Fin</label><input type="time" id="horaFinDestruccion" onchange="calcularDestruccion()"></div>
+        <div><label>Tiempo Total</label><input type="text" id="tiempoDestruccion" readonly></div>
+        <div><label>Canecas Procesadas</label><input type="number" id="canecasTotalesDestruccion"></div>
+        <div><label>Producción (Kg)</label><input type="number" id="produccionDestruccion" oninput="calcularDestruccion()"></div>
+        <div><label>Basura / Rechazo (Kg)</label><input type="number" id="pesoBasuraDestruccion" oninput="calcularDestruccion()"></div>
+        <div><label>% Rechazo</label><input type="text" id="rechazoDestruccion" readonly></div>
+      </div>
+      <br>
+      <label>Observaciones</label>
+      <textarea id="observacionesDestruccion"></textarea>
+      <br>
+      <button class="btnGuardar" onclick="guardarDestruccion()">Guardar Registro</button>
+
+      <table id="tablaDestruccion">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Op1</th><th>Kg Op1</th><th>Op2</th><th>Kg Op2</th><th>Canecas</th><th>Producción</th><th>Basura</th><th>% Rechazo</th><th>Tiempo</th><th>Obs</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+    // Cargar desplegables de operarios en Destrucción
+    cargarOperariosSelect("operario1Destruccion");
+    cargarOperariosSelect("operario2Destruccion");
+  }
+  else if (modulo === "paros") {
+    contenedor.innerHTML = `
+    <div class="card">
+      <h2>PAROS Y NOVEDADES</h2>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaParo"></div>
+        <div>
+          <label>Proceso</label>
+          <select id="procesoParo">
+            <option value="">Seleccionar</option>
+            <option>DESCARGUE</option>
+            <option>TAMIZAJE</option>
+            <option>SELECCIÓN ORGÁNICO</option>
+            <option>ORGÁNICO CANECAS</option>
+            <option>SELECCIÓN DE VERDES</option>
+            <option>CHIPEADO</option>
+            <option>LAVADO DE CANECAS</option>
+            <option>DESTRUCCIÓN DE MARCAS</option>
+          </select>
+        </div>
+        <div><label>Hora Inicio</label><input type="time" id="horaInicioParo" onchange="calcularTiempoParo()"></div>
+        <div><label>Hora Final</label><input type="time" id="horaFinParo" onchange="calcularTiempoParo()"></div>
+        <div><label>Tiempo Perdido</label><input type="text" id="tiempoParo" readonly></div>
+        <div>
+          <label>Tipo de Novedad</label>
+          <select id="tipoParo">
+            <option>PARO OPERATIVO</option>
+            <option>MANTENIMIENTO PREVENTIVO</option>
+            <option>MANTENIMIENTO CORRECTIVO</option>
+            <option>LLUVIA</option>
+            <option>FALTA DE MATERIAL</option>
+            <option>FALTA DE PERSONAL</option>
+            <option>FALLA ELÉCTRICA</option>
+            <option>FALLA MECÁNICA</option>
+            <option>FALTA DE TRANSPORTE</option>
+            <option>CAPACITACIONES</option>
+            <option>OTRO</option>
+          </select>
+        </div>
+        <div>
+          <label>Responsable</label>
+          <select id="responsableParo">
+            <option>PRODUCCIÓN</option>
+            <option>MANTENIMIENTO</option>
+            <option>LOGÍSTICA</option>
+            <option>CLIENTE</option>
+            <option>PROVEEDOR</option>
+            <option>CONTRATISTA</option>
+            <option>CLIMA</option>
+            <option>OTRO</option>
+          </select>
+        </div>
+      </div>
+      <br>
+      <label>Descripción</label>
+      <textarea id="descripcionParo"></textarea>
+      <br><br>
+      <label>Acción Correctiva</label>
+      <textarea id="accionParo"></textarea>
+      <br><br>
+      <button class="btnGuardar" onclick="guardarParo()">Guardar Registro</button>
+
+      <table id="tablaParos">
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Proceso</th><th>Tipo Novedad</th><th>Responsable</th><th>Tiempo Perdido</th><th>Descripción</th><th>Acción Correctiva</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+  }
+}
+
+// -------------------------------------------------------------
+// FUNCIONES AUXILIARES DE TIEMPO
+// -------------------------------------------------------------
+function calcularDiferenciaMinutos(inicioStr, finStr) {
+  if (!inicioStr || !finStr) return 0;
+  let horaInicio = new Date("2026-01-01 " + inicioStr);
+  let horaFin = new Date("2026-01-01 " + finStr);
+  let diferencia = (horaFin - horaInicio) / 60000;
+  if (diferencia < 0) diferencia += 1440;
+  return diferencia;
+}
+
+function formatearMinutos(minutos) {
+  let h = Math.floor(minutos / 60);
+  let m = minutos % 60;
+  return `${h} h ${m} min`;
+}
+
+// -------------------------------------------------------------
+// LÓGICA Y GUARDADO DE CADA FORMULARIO
+// -------------------------------------------------------------
+
+// DESCARGUE
+function calcularDescargue() {
+  let inicio = document.getElementById("horaIngresoDescargue")?.value;
+  let fin = document.getElementById("horaSalidaDescargue")?.value;
+  if (inicio && fin) {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    document.getElementById("tiempoDescargue").value = formatearMinutos(dif);
+  }
+}
+
+function guardarDescargue() {
+  let fecha = document.getElementById("fechaDescargue").value;
+  let cliente = document.getElementById("clienteDescargue").value;
+  let operario1 = document.getElementById("operario1Descargue").value;
+  let operario2 = document.getElementById("operario2Descargue").value;
+  let placa = document.getElementById("placaDescargue").value;
+  let horaIngreso = document.getElementById("horaIngresoDescargue").value;
+  let horaSalida = document.getElementById("horaSalidaDescargue").value;
+  let tipoResiduo = document.getElementById("tipoResiduoDescargue").value;
+  let peso = document.getElementById("pesoDescargue").value || "";
+  let observaciones = document.getElementById("observacionesDescargue").value;
+
+  if (!fecha) { alert("Debe seleccionar una fecha"); return; }
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${cliente}</td><td>${operario1}</td><td>${operario2}</td>
+    <td>${placa}</td><td>${horaIngreso}</td><td>${horaSalida}</td>
+    <td>${tipoResiduo}</td><td>${peso} kg</td><td>${observaciones}</td>
+  </tr>`;
+
+  document.querySelector("#tablaDescargue tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Cliente: cliente, Operacion: "DESCARGUE",
+    Operario1: operario1, Operario2: operario2, TipoResiduo: tipoResiduo,
+    Peso: peso, HoraInicio: horaIngreso, HoraFin: horaSalida, Descripcion: observaciones, PLACA: placa
+  });
+
+  ["fechaDescargue", "clienteDescargue", "operario1Descargue", "operario2Descargue", "placaDescargue", "horaIngresoDescargue", "horaSalidaDescargue", "pesoDescargue", "observacionesDescargue"].forEach(id => {
+    let el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+}
+
+// ORGÁNICO
+function calcularOrganico() {
+  let paladas = parseFloat(document.getElementById("paladasOrganico")?.value) || 0;
+  let inicio = document.getElementById("horaInicioOrganico")?.value;
+  let fin = document.getElementById("horaFinOrganico")?.value;
+
+  if (paladas > 0) {
+    let kilos = paladas * 1850;
+    let toneladas = (kilos / 1000).toFixed(2);
+    
+    // Solo asignamos el valor numérico (sin "kg" ni "t" para no romper el input type="number")
+    document.getElementById("kgOrganico").value = kilos;
+    document.getElementById("tonOrganico").value = toneladas;
+  }
+
+  if (inicio && fin && typeof calcularDiferenciaMinutos === "function") {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    document.getElementById("tiempoOrganico").value = formatearMinutos(dif);
+
+    let horasDecimales = dif / 60;
+    if (paladas > 0 && horasDecimales > 0) {
+      let toneladas = (paladas * 1850) / 1000;
+      document.getElementById("productividadOrganico").value = (toneladas / horasDecimales).toFixed(2);
+    }
+  }
+}
+
+function guardarOrganico() {
+  let fecha = document.getElementById("fechaOrganico").value;
+  let op1 = document.getElementById("operario1Organico").value;
+  let op2 = document.getElementById("operario2Organico").value;
+  let op3 = document.getElementById("operario3Organico").value;
+  let op4 = document.getElementById("operario4Organico").value;
+  let horaInicio = document.getElementById("horaInicioOrganico").value;
+  let horaFin = document.getElementById("horaFinOrganico").value;
+  let tiempo = document.getElementById("tiempoOrganico").value;
+  let paladas = document.getElementById("paladasOrganico").value;
+  let kilos = document.getElementById("kgOrganico").value;
+  let toneladas = document.getElementById("tonOrganico").value;
+  let productividad = document.getElementById("productividadOrganico").value;
+  let observaciones = document.getElementById("observacionesOrganico").value;
+
+  if (!fecha || !paladas) { alert("Debe diligenciar Fecha y Paladas"); return; }
+
+  // Fila adaptada a las 13 columnas exactas de la tabla HTML
+  let fila = `<tr>
+    <td>${fecha}</td>
+    <td>${op1}</td>
+    <td>${op2}</td>
+    <td>${op3}</td>
+    <td>${op4}</td>
+    <td>${horaInicio}</td>
+    <td>${horaFin}</td>
+    <td>${tiempo}</td>
+    <td>${paladas}</td>
+    <td>${kilos}</td>
+    <td>${toneladas}</td>
+    <td>${productividad}</td>
+    <td>${observaciones}</td>
+  </tr>`;
+
+  document.querySelector("#tablaOrganico tbody").insertAdjacentHTML('beforeend', fila);
+
+  // Mantenemos intacto el envío exacto a Google Sheets / Forms
+  enviarAExcel({
+    Fecha: fecha, Operacion: "SELECCIÓN ORGÁNICO",
+    HoraInicio: horaInicio,
+    HoraFin: horaFin,
+    Paladas: paladas, KgTotales: kilos, TonTotales: toneladas, TiempoTotal: tiempo,
+    Operario1: op1, Operario2: op2, Operario3: op3, Operario4: op4,
+    Descripcion: observaciones
+  });
+
+  // Limpiar campos del formulario
+  ["paladasOrganico", "kgOrganico", "tonOrganico", "tiempoOrganico", "productividadOrganico", "observacionesOrganico", "horaInicioOrganico", "horaFinOrganico"].forEach(id => {
+    let el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+}
+
+// CANECAS
+function calcularCanecas() {
+  let canecasAM = Number(document.getElementById("canecasAM")?.value) || 0;
+  let canecasPM = Number(document.getElementById("canecasPM")?.value) || 0;
+  let kgAM = canecasAM * 140;
+  let kgPM = canecasPM * 140;
+  let kgTotal = kgAM + kgPM;
+
+  document.getElementById("kgAM").value = kgAM.toLocaleString() + " kg";
+  document.getElementById("kgPM").value = kgPM.toLocaleString() + " kg";
+  document.getElementById("kgTotalCanecas").value = kgTotal.toLocaleString() + " kg";
+  document.getElementById("tonTotalCanecas").value = (kgTotal / 1000).toFixed(2) + " t";
+}
+
+function guardarCanecas() {
+  let fecha = document.getElementById("fechaCanecas").value;
+  let operarioAM = document.getElementById("operarioAMCanecas").value;
+  let canecasAM = document.getElementById("canecasAM").value;
+  let operarioPM = document.getElementById("operarioPMCanecas").value;
+  let canecasPM = document.getElementById("canecasPM").value;
+  let kgTotal = document.getElementById("kgTotalCanecas").value;
+  let tonTotal = document.getElementById("tonTotalCanecas").value;
+  let observaciones = document.getElementById("observacionesCanecas").value;
+
+  if (!fecha) { alert("Debe ingresar la fecha"); return; }
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${operarioAM}</td><td>${canecasAM}</td><td>${document.getElementById("kgAM").value}</td>
+    <td>${operarioPM}</td><td>${canecasPM}</td><td>${document.getElementById("kgPM").value}</td><td>${kgTotal}</td>
+    <td>${tonTotal}</td><td>${observaciones}</td>
+  </tr>`;
+
+  document.querySelector("#tablaCanecas tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Operacion: "ORGÁNICO CANECAS",
+    OperarioAM: operarioAM, ProductividadCanecas: canecasAM, Operario1: operarioPM,
+    CanecasPM: canecasPM, KgTotales: kgTotal, TonTotales: tonTotal, Descripcion: observaciones
+  });
+
+  ["fechaCanecas", "canecasAM", "canecasPM", "kgAM", "kgPM", "kgTotalCanecas", "tonTotalCanecas", "observacionesCanecas"].forEach(id => {
+    let el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+}
+
+// VERDES
+function calcularVerdes() {
+  let paladas = Number(document.getElementById("paladasVerdes")?.value) || 0;
+  let kgTotal = paladas * 700;
+  let tonTotal = (kgTotal / 1000).toFixed(2);
+  let operarios = 0;
+
+  for (let i = 1; i <= 5; i++) {
+    let op = document.getElementById(`operario${i}Verdes`)?.value;
+    if (op && op.trim() !== "") operarios++;
+  }
+  if (operarios === 0) operarios = 1;
+
+  document.getElementById("kgVerdes").value = kgTotal.toLocaleString() + " kg";
+  document.getElementById("tonVerdes").value = tonTotal + " t";
+  document.getElementById("kgOperarioVerdes").value = Number((kgTotal / operarios).toFixed(0)).toLocaleString() + " kg";
+  document.getElementById("tonOperarioVerdes").value = ((kgTotal / 1000) / operarios).toFixed(2) + " t";
+}
+
+function guardarVerdes() {
+  let fecha = document.getElementById("fechaVerdes").value;
+  let op1 = document.getElementById("operario1Verdes").value;
+  let op2 = document.getElementById("operario2Verdes").value;
+  let op3 = document.getElementById("operario3Verdes").value;
+  let op4 = document.getElementById("operario4Verdes").value;
+  let op5 = document.getElementById("operario5Verdes").value;
+  let paladas = document.getElementById("paladasVerdes").value;
+  let kgTotal = document.getElementById("kgVerdes").value;
+  let tonTotal = document.getElementById("tonVerdes").value;
+  let observaciones = document.getElementById("observacionesVerdes").value;
+
+  if (!fecha) { alert("Debe ingresar la fecha"); return; }
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${op1}</td><td>${op2}</td><td>${op3}</td><td>${op4}</td>
+    <td>${op5}</td><td>${paladas}</td><td>${kgTotal}</td><td>${tonTotal}</td>
+    <td>${document.getElementById("kgOperarioVerdes").value}</td>
+    <td>${document.getElementById("tonOperarioVerdes").value}</td>
+    <td>${observaciones}</td>
+  </tr>`;
+
+  document.querySelector("#tablaVerdes tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Operacion: "SELECCIÓN DE VERDES", Operario1: op1, Operario2: op2,
+    Operario3: op3, Operario4: op4, Operario5: op5, Paladas: paladas,
+    KgTotales: kgTotal, TonTotales: tonTotal, Descripcion: observaciones
+  });
+}
+
+// CHIPEADO
+function calcularChipeado() {
+  let paladas = Number(document.getElementById("paladasChipeado")?.value) || 0;
+  let kgTotal = paladas * 700;
+  let tonTotal = (kgTotal / 1000).toFixed(2);
+  let operarios = 0;
+
+  for (let i = 1; i <= 3; i++) {
+    let op = document.getElementById(`operario${i}Chipeado`)?.value;
+    if (op && op.trim() !== "") operarios++;
+  }
+  if (operarios === 0) operarios = 1;
+
+  document.getElementById("kgChipeado").value = kgTotal.toLocaleString() + " kg";
+  document.getElementById("tonChipeado").value = tonTotal + " t";
+  document.getElementById("tonOperarioChipeado").value = ((kgTotal / 1000) / operarios).toFixed(2) + " t";
+}
+
+function guardarChipeado() {
+  let fecha = document.getElementById("fechaChipeado").value;
+  let maquina = document.getElementById("maquinaChipeado").value;
+  let op1 = document.getElementById("operario1Chipeado").value;
+  let op2 = document.getElementById("operario2Chipeado").value;
+  let op3 = document.getElementById("operario3Chipeado").value;
+  let paladas = document.getElementById("paladasChipeado").value;
+  let kgTotal = document.getElementById("kgChipeado").value;
+  let tonTotal = document.getElementById("tonChipeado").value;
+  let obs = document.getElementById("observacionesChipeado").value;
+
+  if (!fecha) { alert("Debe ingresar la fecha"); return; }
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${maquina}</td><td>${op1}</td><td>${op2}</td><td>${op3}</td>
+    <td>${paladas}</td><td>${kgTotal}</td><td>${tonTotal}</td>
+    <td>${document.getElementById("tonOperarioChipeado").value}</td><td>${obs}</td>
+  </tr>`;
+
+  document.querySelector("#tablaChipeado tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Operacion: "CHIPEADO - " + maquina, Operario1: op1, Operario2: op2,
+    Operario3: op3, Paladas: paladas, KgTotales: kgTotal, TonTotales: tonTotal, Descripcion: obs
+  });
+}
+
+// LAVADO
+function calcularLavado() {
+  let inicio = document.getElementById("horaInicioLavado")?.value;
+  let fin = document.getElementById("horaFinLavado")?.value;
+  let canecas = Number(document.getElementById("canecasLavadas")?.value) || 0;
+
+  let operarios = 0;
+  if (document.getElementById("operario1Lavado")?.value) operarios++;
+  if (document.getElementById("operario2Lavado")?.value) operarios++;
+  if (operarios === 0) operarios = 1;
+
+  if (inicio && fin) {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    let horasDecimales = dif / 60;
+    document.getElementById("tiempoLavado").value = formatearMinutos(dif);
+
+    if (horasDecimales > 0 && canecas > 0) {
+      let cHora = (canecas / horasDecimales).toFixed(1);
+      document.getElementById("canecasHoraLavado").value = cHora;
+      document.getElementById("canecasHoraOperario").value = (cHora / operarios).toFixed(1);
+    }
+  }
+}
+
+function guardarLavado() {
+  let fecha = document.getElementById("fechaLavado").value;
+  let op1 = document.getElementById("operario1Lavado").value;
+  let op2 = document.getElementById("operario2Lavado").value;
+  let canecas = document.getElementById("canecasLavadas").value;
+  let tiempo = document.getElementById("tiempoLavado").value;
+  let canecasHora = document.getElementById("canecasHoraLavado").value;
+  let canecasHoraOp = document.getElementById("canecasHoraOperario").value;
+  let obs = document.getElementById("observacionesLavado").value;
+
+  if (!fecha) { alert("Debe ingresar la fecha"); return; }
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${op1}</td><td>${op2}</td><td>${canecas}</td>
+    <td>${tiempo}</td><td>${canecasHora}</td><td>${canecasHoraOp}</td><td>${obs}</td>
+  </tr>`;
+
+  document.querySelector("#tablaLavado tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Operacion: "LAVADO DE CANECAS",
+    HoraInicio: document.getElementById("horaInicioLavado").value,
+    HoraFin: document.getElementById("horaFinLavado").value,
+    Operario1: op1, Operario2: op2, ProductividadCanecas: canecas,
+    TiempoTotal: tiempo, CanecasHora: canecasHora, Descripcion: obs
+  });
+}
+
+// DESTRUCCIÓN DE MARCAS
+function calcularDestruccion() {
+  let inicio = document.getElementById("horaInicioDestruccion")?.value;
+  let fin = document.getElementById("horaFinDestruccion")?.value;
+  let basura = Number(document.getElementById("pesoBasuraDestruccion")?.value) || 0;
+  let produccion = Number(document.getElementById("produccionDestruccion")?.value) || 0;
+
+  let op1 = document.getElementById("operario1Destruccion")?.value;
+  let op2 = document.getElementById("operario2Destruccion")?.value;
+
+  let opValidos = 0;
+  if (op1 && op1.trim() !== "") opValidos++;
+  if (op2 && op2.trim() !== "") opValidos++;
+  if (opValidos === 0) opValidos = 1;
+
+  let kgPorOp = produccion > 0 ? (produccion / opValidos) : 0;
+  window.kgOp1Destruccion = (op1 && op1.trim() !== "") ? kgPorOp : 0;
+  window.kgOp2Destruccion = (op2 && op2.trim() !== "") ? kgPorOp : 0;
+
+  if (inicio && fin) {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    document.getElementById("tiempoDestruccion").value = formatearMinutos(dif);
+  }
+
+  if (produccion > 0) {
+    document.getElementById("rechazoDestruccion").value = ((basura / produccion) * 100).toFixed(2) + " %";
+  } else {
+    document.getElementById("rechazoDestruccion").value = "0.00 %";
+  }
+}
+
+function guardarDestruccion() {
+  let fecha = document.getElementById("fechaDestruccion").value;
+  let operario1 = document.getElementById("operario1Destruccion").value;
+  let operario2 = document.getElementById("operario2Destruccion").value;
+  let canecas = document.getElementById("canecasTotalesDestruccion").value || 0;
+  let produccion = document.getElementById("produccionDestruccion").value;
+  let basura = document.getElementById("pesoBasuraDestruccion").value || 0;
+  let rechazo = document.getElementById("rechazoDestruccion").value;
+  let tiempo = document.getElementById("tiempoDestruccion").value;
+  let observaciones = document.getElementById("observacionesDestruccion").value;
+
+  if (!fecha) { alert("Debe ingresar la fecha"); return; }
+
+  let kgOp1 = window.kgOp1Destruccion ? window.kgOp1Destruccion.toFixed(1) : "0.0";
+  let kgOp2 = window.kgOp2Destruccion ? window.kgOp2Destruccion.toFixed(1) : "0.0";
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${operario1}</td><td>${kgOp1} kg</td><td>${operario2}</td><td>${kgOp2} kg</td>
+    <td>${canecas}</td><td>${produccion} kg</td><td>${basura} kg</td><td>${rechazo}</td><td>${tiempo}</td><td>${observaciones}</td>
+  </tr>`;
+
+  document.querySelector("#tablaDestruccion tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Operacion: "DESTRUCCIÓN DE MARCAS",
+    HoraInicio: document.getElementById("horaInicioDestruccion").value,
+    HoraFin: document.getElementById("horaFinDestruccion").value,
+    Operario1: operario1, CanecasOp1: kgOp1, Operario2: operario2, CanecasOp2: kgOp2,
+    ProductividadCanecas: canecas, KgTotales: produccion, BasuraKg: basura, TiempoTotal: tiempo, Descripcion: observaciones
+  });
+
+  ["fechaDestruccion", "horaInicioDestruccion", "horaFinDestruccion", "canecasTotalesDestruccion", "pesoBasuraDestruccion", "produccionDestruccion", "tiempoDestruccion", "rechazoDestruccion", "observacionesDestruccion"].forEach(id => {
+    let el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+}
+
+// PAROS / NOVEDADES
+function calcularTiempoParo() {
+  let inicio = document.getElementById("horaInicioParo")?.value;
+  let fin = document.getElementById("horaFinParo")?.value;
+  if (inicio && fin) {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    document.getElementById("tiempoParo").value = formatearMinutos(dif);
+  }
+}
+
+function guardarParo() {
+  let fecha = document.getElementById("fechaParo").value;
+  let proceso = document.getElementById("procesoParo").value;
+  let tipo = document.getElementById("tipoParo").value;
+  let responsable = document.getElementById("responsableParo").value;
+  let tiempo = document.getElementById("tiempoParo").value;
+  let descripcion = document.getElementById("descripcionParo").value;
+  let accion = document.getElementById("accionParo").value;
+
+  if (!fecha) { alert("Debe seleccionar la fecha"); return; }
+
+  let fila = `<tr>
+    <td>${fecha}</td><td>${proceso}</td><td>${tipo}</td><td>${responsable}</td>
+    <td>${tiempo}</td><td>${descripcion}</td><td>${accion}</td>
+  </tr>`;
+
+  document.querySelector("#tablaParos tbody").insertAdjacentHTML('beforeend', fila);
+
+  enviarAExcel({
+    Fecha: fecha, Operacion: "PARO / NOVEDAD", Proceso: proceso, TipoNovedad: tipo,
+    Responsable: responsable, TiempoTotal: tiempo,
+    HoraInicio: document.getElementById("horaInicioParo").value,
+    HoraFin: document.getElementById("horaFinParo").value,
+    Descripcion: descripcion, AccionCorrectiva: accion
+  });
+
+  ["fechaParo", "horaInicioParo", "horaFinParo", "tiempoParo", "descripcionParo", "accionParo"].forEach(id => {
+    let el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+}
+// TAMIZAJE
+function calcularTamizaje() {
+  let inicio = document.getElementById("horaInicioTamizaje")?.value;
+  let fin = document.getElementById("horaFinTamizaje")?.value;
+  if (inicio && fin) {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    document.getElementById("tiempoTamizaje").value = formatearMinutos(dif);
+  }
+}
+
+function calcularTamizaje() {
+  let inicio = document.getElementById("horaInicioTamizaje")?.value;
+  let fin = document.getElementById("horaFinTamizaje")?.value;
+  
+  if (inicio && fin && typeof calcularDiferenciaMinutos === "function") {
+    let dif = calcularDiferenciaMinutos(inicio, fin);
+    document.getElementById("tiempoTamizaje").value = formatearMinutos(dif);
+  }
+}
+function guardarTamizaje() {
+  let fecha = document.getElementById("fechaTamizaje").value;
+  let lote = document.getElementById("loteTamizaje").value;
+  let tipoProducto = document.getElementById("tipoProductoTamizaje").value;
+  let paladas = parseFloat(document.getElementById("paladasTamizaje").value) || 0;
+  let operario1 = document.getElementById("operario1Tamizaje").value;
+  let operario2 = document.getElementById("operario2Tamizaje").value;
+  let operario3 = document.getElementById("operario3Tamizaje").value;
+  let horaInicio = document.getElementById("horaInicioTamizaje").value;
+  let horaFin = document.getElementById("horaFinTamizaje").value;
+  let tiempoTotal = document.getElementById("tiempoTamizaje").value;
+  let observaciones = document.getElementById("observacionesTamizaje").value;
+
+  if (!fecha) { 
+    alert("Debe seleccionar una fecha"); 
+    return; 
+  }
+
+  // Cálculo de Kilos estimados (910 kg por palada)
+  let kgCalculados = paladas * 910;
+
+  // Fila para la tabla local en pantalla (Mapeada en el orden exacto de las 11 columnas):
+  // Fecha | Op1 | Op2 | Op3 | H.Inicio | H.Fin | Tiempo | N° Lote | Producto | Paladas | Obs.
+  let fila = `<tr>
+    <td>${fecha}</td>
+    <td>${operario1}</td>
+    <td>${operario2}</td>
+    <td>${operario3}</td>
+    <td>${horaInicio}</td>
+    <td>${horaFin}</td>
+    <td>${tiempoTotal}</td>
+    <td>${lote}</td>
+    <td>${tipoProducto}</td>
+    <td>${paladas}</td>
+    <td>${observaciones}</td>
+  </tr>`;
+
+  document.querySelector("#tablaTamizaje tbody").insertAdjacentHTML('beforeend', fila);
+
+  // Envío a Google Forms / Sheets (Conserva tus llaves y suma 'Paladas' y 'KgTotales')
+  enviarAExcel({
+    Fecha: fecha,
+    Operacion: "TAMIZAJE",
+    NumeroLote: lote,
+    TipoProducto: tipoProducto,
+    Paladas: paladas,
+    KgTotales: kgCalculados,
+    Operario1: operario1,
+    Operario2: operario2,
+    Operario3: operario3,
+    HoraInicio: horaInicio,
+    HoraFin: horaFin,
+    TiempoTotal: tiempoTotal,
+    Descripcion: observaciones
+  });
+
+  // Limpiar campos del formulario
+  ["fechaTamizaje", "loteTamizaje", "tipoProductoTamizaje", "paladasTamizaje", "operario1Tamizaje", "operario2Tamizaje", "operario3Tamizaje", "horaInicioTamizaje", "horaFinTamizaje", "tiempoTamizaje", "observacionesTamizaje"].forEach(id => {
+    let el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  cargarModulo('descargue');
+});
+
+const URL_GITHUB_CLIENTES = './Base%20de%20datos%20clientes.xlsx';
+const URL_GITHUB_OPERARIOS = './Base%20de%20datos%20Operarios.xlsx';
+// MÓDULO DE ADMINISTRACIÓN (PROTEGIDO CON CLAVE)
+function accesoAdmin() {
+  const claveCorrecta = "biociclo1234";
+  const claveIngresada = prompt("Ingrese la clave de administración para continuar:");
+
+  if (claveIngresada !== claveCorrecta) {
+    if (claveIngresada !== null) { // Si el usuario no presionó "Cancelar"
+      alert("Clave incorrecta. Acceso denegado.");
+    }
+    return; // Cancela la ejecución si la clave falla o se cancela
+  }
+
+  document.querySelectorAll("#menuNav button").forEach(b => b.classList.remove("active"));
+
+  const contenedor = document.getElementById("contenido");
+  contenedor.innerHTML = `
+    <div class="card">
+      <h2>ADMINISTRACIÓN - BASES DE DATOS DESDE GITHUB</h2>
+      <p>Sincroniza las listas de Clientes y Operarios guardadas en tu repositorio de GitHub.</p>
+      
+      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        <div style="border: 1px dashed var(--border); padding: 15px; border-radius: 8px; text-align: center;">
+          <h3>🏢 Base de Datos Clientes</h3>
+          <p id="statusClientes">Estado: No sincronizado</p>
+          <button class="btnGuardar" onclick="sincronizarClientesGitHub()">Sincronizar Clientes</button>
+        </div>
+
+        <div style="border: 1px dashed var(--border); padding: 15px; border-radius: 8px; text-align: center;">
+          <h3>👷 Base de Datos Operarios</h3>
+          <p id="statusOperarios">Estado: No sincronizado</p>
+          <button class="btnGuardar" onclick="sincronizarOperariosGitHub()">Sincronizar Operarios</button>
+        </div>
+      </div>
+    </div>`;
+}
+// Descargar y procesar Clientes desde GitHub
+async function sincronizarClientesGitHub() {
+  const statusLbl = document.getElementById("statusClientes");
+  if (statusLbl) statusLbl.innerText = "Cargando desde GitHub...";
+
+  try {
+    const response = await fetch(URL_GITHUB_CLIENTES);
+    if (!response.ok) throw new Error("No se pudo descargar el archivo de GitHub");
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    localStorage.setItem("db_clientes", JSON.stringify(json));
+    if (statusLbl) statusLbl.innerText = `¡Éxito! ${json.length} clientes cargados.`;
+    console.log("Clientes cargados:", json);
+  } catch (error) {
+    console.error(error);
+    if (statusLbl) statusLbl.innerText = "Error al descargar el archivo. Revisa la URL o permisos.";
+  }
+}
+
+// Descargar y procesar Operarios desde GitHub
+async function sincronizarOperariosGitHub() {
+  const statusLbl = document.getElementById("statusOperarios");
+  if (statusLbl) statusLbl.innerText = "Cargando desde GitHub...";
+
+  try {
+    const response = await fetch(URL_GITHUB_OPERARIOS);
+    if (!response.ok) throw new Error("No se pudo descargar el archivo de GitHub");
+
+    const arrayBuffer = await response.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    localStorage.setItem("db_operarios", JSON.stringify(json));
+    if (statusLbl) statusLbl.innerText = `¡Éxito! ${json.length} operarios cargados.`;
+    console.log("Operarios cargados:", json);
+  } catch (error) {
+    console.error(error);
+    if (statusLbl) statusLbl.innerText = "Error al descargar el archivo. Revisa la URL o permisos.";
+  }
+}
+// Cargar lista de Clientes en un campo desplegable <select>
+function cargarClientesSelect(idSelect) {
+  const select = document.getElementById(idSelect);
+  if (!select) return;
+
+  const datos = JSON.parse(localStorage.getItem("db_clientes") || "[]");
+  select.innerHTML = '<option value="">Seleccione un cliente...</option>';
+
+  datos.forEach(item => {
+    const llaves = Object.keys(item);
+    
+    // Busca primero por nombres comunes de encabezado (omitimos llaves que sean solo 'id' o 'codigo')
+    let llaveNombre = llaves.find(k => /nombre|razon|empresa|gestor|cliente/i.test(k) && !/id|codigo|nit/i.test(k));
+    
+    // Si no encuentra por coincidencia de texto, toma la segunda columna (índice 1) si existe, de lo contrario la primera
+    if (!llaveNombre) {
+      llaveNombre = llaves.length > 1 ? llaves[1] : llaves[0];
+    }
+
+    const nombre = item[llaveNombre];
+
+    if (nombre) {
+      select.innerHTML += `<option value="${nombre}">${nombre}</option>`;
+    }
+  });
+}
+
+// Cargar lista de Operarios en un campo desplegable <select>
+function cargarOperariosSelect(idSelect) {
+  const select = document.getElementById(idSelect);
+  if (!select) return;
+
+  const datos = JSON.parse(localStorage.getItem("db_operarios") || "[]");
+  select.innerHTML = '<option value="">Seleccione un operario...</option>';
+
+  datos.forEach(item => {
+    // Busca cualquier propiedad que contenga 'operario', 'nombre' o toma el primer valor de la celda
+    const llaves = Object.keys(item);
+    const llaveNombre = llaves.find(k => /operario|nombre|empleado|trabajador/i.test(k)) || llaves[0];
+    const nombre = item[llaveNombre];
+
+    if (nombre) {
+      select.innerHTML += `<option value="${nombre}">${nombre}</option>`;
+    }
+  });
+}
+</script>
+</body>
+</html>
